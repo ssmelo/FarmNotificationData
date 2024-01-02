@@ -1,0 +1,35 @@
+version: "3.8"
+
+services:
+  farmnotificationdataservice:
+    build:
+        context: .
+        dockerfile: FarmNotificationData/Dockerfile
+    depends_on:
+        - mongoDatabase
+    environment:
+        ASPNETCORE_ENVIRONMENT: "Development"
+  mongodatabase:
+    image: mongo:7.0
+    command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27017"]
+    ports:
+        - 27017:27017
+    extra_hosts:
+        - "host.docker.internal:host-gateway"
+    healthcheck:
+        test: echo "try { rs.status() } catch (err) { rs.initiate({_id:'rs0',members:[{_id:0,host:'host.docker.internal:27017'}]}) }" | mongosh --port 27017 --quiet
+        interval: 5s
+        timeout: 30s
+        start_period: 0s
+        retries: 30
+    volumes:
+        - "mongodatabase_data:/data/db"
+        - "mongodatabase_config:/data/configdb"
+
+volumes:
+    mongodatabase_data:
+    mongodatabase_config:
+
+networks:
+    app-network:
+        driver: bridge
